@@ -13,4 +13,4 @@ The project is being completed as part of the portfolio excercises for the Udaci
 ## Data Source
 The data is being sourced from https://www.data.gov.uk. This website contains open-source UK gorvernment data. The dataset being used as part of the project is UK crime statistics on the number of arrests and ethnicities of those being arrested. 
 
-The latest available data is made available in the application via a `requests` call to the appropiate url.
+The latest available data is made available in the application via a `requests` call to https://www.ethnicity-facts-figures.service.gov.uk/crime-justice-and-the-law/policing/number-of-arrests/latest#download-the-data.
