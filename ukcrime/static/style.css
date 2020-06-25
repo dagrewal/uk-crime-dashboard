@@ -3,9 +3,13 @@ body {
     color: white;
 }
 
-h1 {
+#page_title {
     color: rgb(34, 204, 207);
     margin-top: 20px;
+}
+
+#page_subtitle {
+    color: ghostwhite;
 }
 
 footer {
