@@ -1,0 +1,13 @@
+body {
+    font-family: 'Noto Sans JP', sans-serif;
+    color: white;
+}
+
+h1 {
+    color: rgb(34, 204, 207);
+    margin-top: 20px;
+}
+
+footer {
+    color: white;
+}
