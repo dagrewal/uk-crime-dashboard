@@ -82,14 +82,18 @@ def clean_data():
     df['Number of arrests'] = df['Number of arrests'].replace('', -1)
     df['Number of arrests'] = df['Number of arrests'].astype(int)
 
+    
+
     return df
 
-def filter_all_df():
+def filter_df(how='all'):
     """
     Filters the data to include only stats about population as a whole.
 
     Args:
-        None
+        how (string) ['all', 'not all'] representing how to filter the data:
+            'all' selects all rows where column values = all
+            'not all' selects all rows where column values != all 
 
     Returns:
         filtered_df (pandas.DataFrame) containing filtered data
@@ -97,8 +101,15 @@ def filter_all_df():
     # call clean_data()
     df = clean_data()
 
-    filtered_df = df.loc[(df.Geography=='All') & (df.Gender=='All') & (df.Ethnicity=='All') &
-                         (df.Age_Group=='All') &(df.Missing_Number_of_Arrests == 0)].copy()
+    if how == 'all':
+        filtered_df = df.loc[(df.Geography=='All') & (df.Gender=='All') & (df.Ethnicity=='All') &
+                             (df.Age_Group=='All') & (df.Missing_Number_of_Arrests == 0)].copy()
+    elif how == 'not all':
+        filtered_df = df.loc[(df.Ethnicity != 'All') & (df.Gender != 'All') &
+                             (df.Age_Group != 'All') & (df.Geography != 'All') &
+                             (df.Missing_Number_of_Arrests == 0)].copy()
+    else:
+        raise Exception("Parameter value not recognised. Value must be 'all' or 'not all'.")
 
     return filtered_df
 
@@ -113,7 +124,8 @@ def plot_data():
         figures (list) containing the plotly visualisations (dict)
     """
     # call clean_data()
-    df_all = filter_all_df()
+    df_all = filter_df()
+    df_not_all = filter_df(how='not all')
 
     # plot the total number of arrests over time
     plot_one = []
@@ -124,7 +136,7 @@ def plot_data():
         go.Scatter(
             x=x_vals,
             y=y_vals,
-            mode='lines',
+            mode='lines+markers',
             marker=dict(
                 symbol=200
             ),
@@ -153,10 +165,53 @@ def plot_data():
         ),
     )
 
+    # plot the number of arrests by age group and gender
+    gender_age_groups = df_not_all.groupby(['Age_Group', 'Gender'])['Number of arrests'].sum()
+    age_groups = gender_age_groups.index.get_level_values(0).tolist()
+    female_arrests = gender_age_groups[gender_age_groups.index.get_level_values(1) == 'Female'].values.tolist()
+    male_arrests = gender_age_groups[gender_age_groups.index.get_level_values(1) == 'Male'].values.tolist()
+
+    plot_two = []
+
+    plot_two.append(
+        go.Bar(
+            name='Female',
+            x=age_groups,
+            y=female_arrests
+        )
+    )
+    plot_two.append(
+        go.Bar(
+            name='Male',
+            x=age_groups,
+            y=male_arrests
+        )
+    )
+
+    layout_two = dict(
+        title="Number of Arrests by Age Group & Gender",
+        font=dict(
+            color='white'
+        ),
+        plot_bgcolor='transparent',
+        paper_bgcolor='transparent',
+        xaxis=dict(
+            color='white'
+        ),
+        yaxis=dict(
+            color='white',
+            title='Number of arrests'
+        ),
+        barmode='group'
+    )
+
+    
+
 
     # append all plotly graphs to a list
     figures = []
     figures.append(dict(data=plot_one, layout=layout_one))
+    figures.append(dict(data=plot_two, layout=layout_two))
 
     return figures
     
