@@ -15,3 +15,11 @@ body {
 footer {
     color: white;
 }
+
+#info_div {
+    border-right: white;
+}
+
+#plots {
+    margin-top: 2px;
+}

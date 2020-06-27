@@ -82,7 +82,12 @@ def clean_data():
     df['Number of arrests'] = df['Number of arrests'].replace('', -1)
     df['Number of arrests'] = df['Number of arrests'].astype(int)
 
-    
+    # make new ethnic groups like those on data source website description
+    df.Ethnicity = df.Ethnicity.apply(lambda x: 'Asian' if x in ['Asian', 'Indian', 'Pakistani', 'Bangladeshi', 'Any other asian']
+                                      else 'Black' if x in ['Black Caribbean', 'Black African', 'Any other black background', 'Black']
+                                      else 'White' if x in ['White Irish', 'White British', 'White', 'Any other white background']
+                                      else 'Other' if x in ['Chinese', 'Other', 'Any other ethnic group']
+                                      else 'Mixed' if 'mixed' in x.lower() else x)
 
     return df
 
@@ -123,33 +128,51 @@ def plot_data():
     Returns:
         figures (list) containing the plotly visualisations (dict)
     """
-    # call clean_data()
+    # call clean_data() and filter_data()
     df_all = filter_df()
     df_not_all = filter_df(how='not all')
+    df = clean_data()
 
-    # plot the total number of arrests over time
+    # plot the total number of arrests by gender
     plot_one = []
-    x_vals = df_all.groupby('Time')['Number of arrests'].sum().index.tolist()
-    y_vals = df_all.groupby('Time')['Number of arrests'].sum().tolist()
+
+    df_gender_pivot = df.loc[(df.Missing_Number_of_Arrests == 0) & (df.Ethnicity=='All') & (df.Geography=='All') &
+                             (df.Age_Group=='All') & (df.Gender != 'All')].copy()
+    df_gender_pivot = df_gender_pivot.pivot_table(index='Time', columns=['Gender'], values='Number of arrests', aggfunc='sum')
 
     plot_one.append(
         go.Scatter(
-            x=x_vals,
-            y=y_vals,
+            x=df_gender_pivot.index.tolist(),
+            y=df_gender_pivot.Female.tolist(),
             mode='lines+markers',
             marker=dict(
                 symbol=200
             ),
-            name='Number of arrests',
+            name='Female',
             line=dict(
-                color="rgb(34, 204, 207)"
+                color="aquamarine"
+            )
+        )
+    )
+
+    plot_one.append(
+        go.Scatter(
+            x=df_gender_pivot.index.tolist(),
+            y=df_gender_pivot.Male.tolist(),
+            mode='lines+markers',
+            marker=dict(
+                symbol=200
+            ),
+            name='Male',
+            line=dict(
+                color="yellow"
             )
         )
     )
 
     layout_one = dict(
-        title="Number of Total Arrests per Year",
-        font =dict(
+        title="Number of Total Arrests by Gender per Year",
+        font = dict(
             color="white"
         ),
         plot_bgcolor='transparent',
@@ -165,62 +188,106 @@ def plot_data():
         ),
     )
 
-    # plot the number of arrests by age group and gender
-    gender_age_groups = df_not_all.groupby(['Age_Group', 'Gender'])['Number of arrests'].sum()
-    age_groups = gender_age_groups.index.get_level_values(0).tolist()
-    female_arrests = gender_age_groups[gender_age_groups.index.get_level_values(1) == 'Female'].values.tolist()
-    male_arrests = gender_age_groups[gender_age_groups.index.get_level_values(1) == 'Male'].values.tolist()
+    # plot gender arrests by ethnicity - use grouping that are specified on data source website
+    df_ethnic_pivot = df.loc[(df.Missing_Number_of_Arrests == 0) & (df.Ethnicity != 'All') &
+                       (df.Age_Group == 'All') & (df.Geography == 'All') &
+                       (df.Gender == 'All')].copy()
+    df_ethnic_pivot = df_ethnic_pivot.loc[df_ethnic_pivot.Ethnicity != 'Unreported']
+    df_ethnic_pivot['Rate per 1,000 population by ethnicity, gender, and PFA'] = df_ethnic_pivot['Rate per 1,000 population by ethnicity, gender, and PFA'].astype(int)
+    df_ethnic_pivot = df_ethnic_pivot.pivot_table(index='Time', columns=['Ethnicity'],
+                                                  values='Rate per 1,000 population by ethnicity, gender, and PFA', aggfunc='sum')
 
     plot_two = []
+    colors = ['aquamarine', 'yellow', 'skyblue', 'tomato', 'magenta']
 
-    plot_two.append(
-        go.Bar(
-            name='Female',
-            x=age_groups,
-            y=female_arrests
+    for eth, col in zip(df_ethnic_pivot.columns, colors):
+        plot_two.append(
+            go.Scatter(name=eth,
+                       x=df_ethnic_pivot.index.tolist(),
+                       y=df_ethnic_pivot[eth].tolist(),
+                       line=dict(
+                           color=col
+                       ),
+                       mode='lines+markers',
+                       marker=dict(
+                           symbol=102
+                       )
+            )
         )
-    )
-    plot_two.append(
-        go.Bar(
-            name='Male',
-            x=age_groups,
-            y=male_arrests
-        )
-    )
 
     layout_two = dict(
-        title="Number of Arrests by Age Group & Gender",
-        font=dict(
+        title="Rate of Arrests per 1000 People by Ethnicity per Year",
+        font = dict(
             color='white'
         ),
-        plot_bgcolor='transparent',
-        paper_bgcolor='transparent',
         xaxis=dict(
-            color='white'
+            title="Year",
+            color='white',
+            showgrid=False
         ),
         yaxis=dict(
-            color='white',
-            title='Number of arrests'
+            title="Rate of arrests",
+            color="white"
         ),
-        barmode='group'
+        paper_bgcolor='transparent',
+        plot_bgcolor='transparent'
     )
 
-    
+    # plot the top 10 forces per year
+    df_forces = df.loc[(df.Missing_Number_of_Arrests == 0) & (df.Ethnicity == 'All') & (df.Age_Group == 'All') &
+                       (df.Gender == 'All') & (df.Geography != 'All')].copy()
+    df_forces = df_forces.loc[~df['Rate per 1,000 population by ethnicity, gender, and PFA'].str.contains('N/A')]
+    df_forces['Rate per 1,000 population by ethnicity, gender, and PFA'] = df_forces['Rate per 1,000 population by ethnicity, gender, and PFA'].astype(int)
+    df_forces_arrest_rates = df_forces.groupby(['Geography'])['Rate per 1,000 population by ethnicity, gender, and PFA'].mean().sort_values(ascending=False)
+    top10_forces = df_forces_arrest_rates.index.tolist()[:10]
+    bottom10_forces = df_forces_arrest_rates.index.tolist()[-10:]
 
+    df_top10_forces = df.loc[(df.Missing_Number_of_Arrests == 0) & (df.Ethnicity == 'All') & (df.Age_Group == 'All') &
+                       (df.Gender == 'All') & (df.Geography.isin(top10_forces))].copy()
+    df_top10_forces_pivot = df_top10_forces.pivot_table(index='Time', columns=['Geography'], values='Rate per 1,000 population by ethnicity, gender, and PFA', aggfunc='sum')
+    df_top10_forces_pivot.at['2017/18', 'Lancashire'] = 14 # lancashire didnt record 17/18 data so fill value with year before 
+
+    plot_three = []
+    colors = ['aquamarine', 'yellow', 'skyblue', 'tomato', 'magenta', 'blue', 'chartreuse', 'cyan', 'navajowhite', 'hotpink']
+
+    for force,col in zip(df_top10_forces_pivot.columns, colors):
+        plot_three.append(
+            go.Scatter(
+                x=df_top10_forces_pivot.index.tolist(),
+                y=df_top10_forces_pivot[force].tolist(),
+                name=force,
+                mode='lines+markers',
+                line=dict(
+                    color=col
+                ),
+                marker=dict(
+                    symbol=200
+                )
+            )
+        )
+
+    layout_three = dict(
+        title="Police Forces with Highest Rates of Arrest",
+        font = dict(
+            color='white'
+        ),
+        xaxis=dict(
+            title="Year",
+            color='white',
+            showgrid=False
+        ),
+        yaxis=dict(
+            title="Rate of arrests",
+            color="white"
+        ),
+        paper_bgcolor='transparent',
+        plot_bgcolor='transparent'
+    )
 
     # append all plotly graphs to a list
     figures = []
     figures.append(dict(data=plot_one, layout=layout_one))
     figures.append(dict(data=plot_two, layout=layout_two))
+    figures.append(dict(data=plot_three, layout=layout_three))
 
     return figures
-    
-    
-
-"""
-business questions:
-number of arrests per force
-number of arrests by age group
-number of arrests by time
-number of arrests by ethnicity
-"""
