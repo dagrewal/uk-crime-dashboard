@@ -1,4 +1,4 @@
-# uk-crime-dashboard (currently under development)
+# UK Crime Dashboard (currently under development)
 Web application showing UK Crime statistics. Built using Python, Flask and Plotly.
 ## Overview
 A web application that displays crime statistics in the UK. The application is being developed using the following architecture:
