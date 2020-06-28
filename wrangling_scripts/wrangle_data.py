@@ -151,9 +151,6 @@ def plot_data():
             name='Female',
             line=dict(
                 color="aquamarine"
-            ),
-            hoverlabel=dict(
-                bgcolor='darkslategrey'
             )
         )
     )
@@ -169,9 +166,6 @@ def plot_data():
             name='Male',
             line=dict(
                 color="yellow"
-            ),
-            hoverlabel=dict(
-                bgcolor='darkslategrey'
             )
         )
     )

@@ -11,7 +11,7 @@
     <body class="bg-dark">
         <!--navbar links-->     
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
-            <a class="navbar-brand" href="#">UK Crime Statistics</a>
+            <a class="navbar-brand" href="#">England Crime Statistics</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" 
         data-target="#navbarTogglerDemo02" 
         aria-controls="navbarTogglerDemo02" aria-expanded="false" 
@@ -25,7 +25,7 @@
                 <a class="nav-link" href="https://github.com/dagrewal/uk-crime-dashboard">GitHub Repository</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="https://www.ethnicity-facts-figures.service.gov.uk/">UK Crime Data</a>
+                <a class="nav-link" href="https://www.ethnicity-facts-figures.service.gov.uk/">England Crime Data</a>
             </li>
             </ul>
         </div>
@@ -41,7 +41,7 @@
             </div>
             <div class="col-11">
                 <div class="mt-3">
-                    <h1 class="text-center" id="page_title">UK Crime Statistics</h1>
+                    <h1 class="text-center" id="page_title">England Crime Statistics</h1>
                     <h2 class="text-center" id="page_subtitle">A Breakdown of Arrests by Ethnicity & Gender</h2>
                 </div>
                 <div class="container" id="plots">
@@ -90,7 +90,7 @@
                     <div class="row">
                         <div class="col-12 mt-5">
                             <div class="mt-5">
-                                <h3 class="text-center text-white">Bottom 5 Police Forces with Highest Rates of Arrest</h3>
+                                <h3 class="text-center text-white">Top 6 Police Forces with Lowest Rates of Arrest</h3>
                             </div>
                         </div>
                     </div>
@@ -116,26 +116,26 @@
                             <div id="{{ids[14]}}"></div>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-12 mt-3">
+                            <footer class="sticky-bottom text-center mt-3">
+                                Developed by Daniel Grewal
+                            </footer>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </body>
-    <div class="row">
-        <div class="col-12">
-            <footer class="sticky-bottom text-center">
-                Developed by Daniel Grewal
-                <script type="text/javascript">
-                    // plots the figure with id
-                    // id must match the div id above in the html
-                    var figures = {{figuresJSON | safe}};
-                    var ids = {{ids | safe}};
-                    for(var i in figures) {
-                        Plotly.plot(ids[i],
-                            figures[i].data,
-                            figures[i].layout || {});
-                    }
-                </script>
-            </footer>
-        </div>
-    </div>
+    </body> 
+    <script type="text/javascript">
+        // plots the figure with id
+        // id must match the div id above in the html
+        var figures = {{figuresJSON | safe}};
+        var ids = {{ids | safe}};
+        for(var i in figures) {
+            Plotly.plot(ids[i],
+                figures[i].data,
+                figures[i].layout || {});
+        }
+    </script>
 </html>
