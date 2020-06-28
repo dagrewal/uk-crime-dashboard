@@ -1,1 +1,1 @@
-gunicorn ukcrime:app
+web gunicorn ukcrime:app
