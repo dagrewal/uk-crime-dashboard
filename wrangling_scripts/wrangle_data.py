@@ -133,12 +133,12 @@ def plot_data():
     df_not_all = filter_df(how='not all')
     df = clean_data()
 
-    # plot the total number of arrests by gender
+    # plot the rate of arrests by gender
     plot_one = []
 
     df_gender_pivot = df.loc[(df.Missing_Number_of_Arrests == 0) & (df.Ethnicity=='All') & (df.Geography=='All') &
                              (df.Age_Group=='All') & (df.Gender != 'All')].copy()
-    df_gender_pivot = df_gender_pivot.pivot_table(index='Time', columns=['Gender'], values='Number of arrests', aggfunc='sum')
+    df_gender_pivot = df_gender_pivot.pivot_table(index='Time', columns=['Gender'], values='Rate per 1,000 population by ethnicity, gender, and PFA', aggfunc='sum')
 
     plot_one.append(
         go.Scatter(
@@ -151,6 +151,9 @@ def plot_data():
             name='Female',
             line=dict(
                 color="aquamarine"
+            ),
+            hoverlabel=dict(
+                bgcolor='darkslategrey'
             )
         )
     )
@@ -166,12 +169,15 @@ def plot_data():
             name='Male',
             line=dict(
                 color="yellow"
+            ),
+            hoverlabel=dict(
+                bgcolor='darkslategrey'
             )
         )
     )
 
     layout_one = dict(
-        title="Number of Total Arrests by Gender per Year",
+        title="Rate of Arrests Arrests by Gender per Year",
         font = dict(
             color="white"
         ),
@@ -180,15 +186,16 @@ def plot_data():
         xaxis=dict(
             title='Year',
             color='white',
-            showgrid=False
+            showgrid=False,
+            tickangle=60
         ),
         yaxis=dict(
-            title="Number of arrests",
+            title="Rate of arrests (per 1000 people)",
             color='white'
         ),
     )
 
-    # plot gender arrests by ethnicity - use grouping that are specified on data source website
+    # plot arrests by ethnicity - use grouping that are specified on data source website
     df_ethnic_pivot = df.loc[(df.Missing_Number_of_Arrests == 0) & (df.Ethnicity != 'All') &
                        (df.Age_Group == 'All') & (df.Geography == 'All') &
                        (df.Gender == 'All')].copy()
@@ -216,17 +223,18 @@ def plot_data():
         )
 
     layout_two = dict(
-        title="Rate of Arrests per 1000 People by Ethnicity per Year",
+        title="Rate of Arrests by Ethnicity per Year",
         font = dict(
             color='white'
         ),
         xaxis=dict(
             title="Year",
             color='white',
-            showgrid=False
+            showgrid=False,
+            tickangle=60
         ),
         yaxis=dict(
-            title="Rate of arrests",
+            title="Rate of arrests (per 1000 people)",
             color="white"
         ),
         paper_bgcolor='transparent',
@@ -277,17 +285,75 @@ def plot_data():
             showgrid=False
         ),
         yaxis=dict(
-            title="Rate of arrests",
+            title="Rate of arrests (per 1000 people)",
             color="white"
         ),
         paper_bgcolor='transparent',
         plot_bgcolor='transparent'
     )
 
+    # plot rate of arrest for ethnicity for top 5 and bottom 5 forces
+    top5_forces = df_forces_arrest_rates.index.tolist()[:6]
+    bottom5_forces = df_forces_arrest_rates.index.tolist()[-6:]
+    df_ethnic_pivot = df.loc[(df.Missing_Number_of_Arrests == 0) & (df.Ethnicity != 'All') &
+                       (df.Age_Group == 'All') & (df.Geography.isin(top5_forces + bottom5_forces)) &
+                       (df.Gender == 'All')].copy()
+    df_ethnic_pivot = df_ethnic_pivot.loc[df_ethnic_pivot.Ethnicity != 'Unreported']
+    df_ethnic_pivot['Rate per 1,000 population by ethnicity, gender, and PFA'] = df_ethnic_pivot['Rate per 1,000 population by ethnicity, gender, and PFA'].astype(int)
+    df_force_ethnic_groups = df_ethnic_pivot.groupby('Geography')
+    forces_dict = dict()
+    forces_layout_dict = dict()
+
+    for name, group, in df_force_ethnic_groups:
+        colors = ['aquamarine', 'yellow', 'skyblue', 'tomato', 'magenta']
+        plot_tmp = []
+        tmp = group.pivot_table(index='Time', columns=['Ethnicity'], values='Rate per 1,000 population by ethnicity, gender, and PFA', aggfunc='sum')
+        for eth, col in zip(tmp.columns, colors):
+            plot_tmp.append(go.Scatter(
+                name=eth,
+                mode="lines+markers",
+                x=tmp.index.tolist(),
+                y=tmp[eth].tolist(),
+                line=dict(
+                    color=col
+                ),
+                marker=dict(
+                    symbol=200
+                )
+            ))
+        forces_dict[name] = plot_tmp
+        forces_layout_dict[name] = dict(
+                                    title=name,
+                                    font = dict(
+                                    color='white'
+                                    ),
+                                    xaxis=dict(
+                                        title="Year",
+                                        color='white',
+                                        showgrid=False,
+                                        tickangle=60
+                                    ),
+                                    yaxis=dict(
+                                        title="Rate of arrests (per 1000 people)",
+                                        color="white"
+                                    ),
+                                    paper_bgcolor='transparent',
+                                    plot_bgcolor='transparent'
+                                    )
+        
+
     # append all plotly graphs to a list
     figures = []
     figures.append(dict(data=plot_one, layout=layout_one))
     figures.append(dict(data=plot_two, layout=layout_two))
     figures.append(dict(data=plot_three, layout=layout_three))
+    
+    for i, j in zip(forces_dict.items(), forces_layout_dict.items()):
+        if i[0] in top5_forces:
+            figures.append(dict(data=i[1], layout=j[1]))
+
+    for i, j in zip(forces_dict.items(), forces_layout_dict.items()):
+        if i[0] in bottom5_forces:
+            figures.append(dict(data=i[1], layout=j[1]))
 
     return figures
